@@ -148,11 +148,13 @@ jobs:
         files: ./coverage.info
         token: ${{ secrets.CODECOV_TOKEN }}
 
-  web:
+    web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         repository: emscripten-core/emsdk
         path: emsdk
@@ -161,9 +163,35 @@ jobs:
         cd emsdk
         ./emsdk install latest
         ./emsdk activate latest
-    - name: make
+    - name: make with memory growth
       run: |
         source emsdk/emsdk_env.sh
-        emcmake cmake . -DLUAU_BUILD_WEB=ON -DCMAKE_BUILD_TYPE=Release
+        emcmake cmake . \
+          -DLUAU_BUILD_WEB=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_EXE_LINKER_FLAGS="-sSTACK_SIZE=1048576 -sENVIRONMENT=web,node -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4294967296 -sINITIAL_MEMORY=67108864"
         make -j2 Luau.Web.JSPI
         make -j2 Luau.Web.Asyncify
+    - name: Locate artifacts
+      run: |
+        echo "=== .js e .wasm gerados ==="
+        find . -maxdepth 3 \( -name "Luau.Web*.js" -o -name "Luau.Web*.wasm" \) -type f | sort
+    - name: Collect into dist
+      run: |
+        mkdir -p dist
+        find . -maxdepth 3 \( -name "Luau.Web*.js" -o -name "Luau.Web*.wasm" \) -type f -exec cp {} dist/ \;
+        ls -la dist/
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: luau-wasm
+        path: dist/
+        if-no-files-found: error
+    - name: Commit dist back
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add -f dist/
+        git diff --staged --quiet && echo "nada novo" && exit 0
+        git commit -m "build: wasm with memory growth [skip ci]"
+        git push
