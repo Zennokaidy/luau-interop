@@ -56,7 +56,7 @@ jobs:
         ./luau-tests -ts=Conformance --codegen -O2 --fflags=true,DebugCodegenLimitRegs=true
     - name: make cli
       run: |
-         make -j2 config=sanitize werror=1 luau luau-analyze luau-compile # match config with tests to improve build time
+         make -j2 config=sanitize werror=1 luau luau-analyze luau-compile
          ./luau tests/conformance/assert.luau
          ./luau-analyze tests/conformance/assert.luau
          ./luau-compile tests/conformance/assert.luau
@@ -73,7 +73,7 @@ jobs:
     - name: cmake build
       run: cmake --build . --target Luau.UnitTest Luau.Conformance --config Debug
     - name: run tests
-      shell: bash # necessary for fail-fast
+      shell: bash
       run: |
         Debug/Luau.UnitTest.exe
         Debug/Luau.Conformance.exe
@@ -82,7 +82,7 @@ jobs:
         Debug/Luau.UnitTest.exe --fflags=DebugLuauForceOldSolver
         Debug/Luau.UnitTest.exe --fflags=DebugLuauForceOldSolver,true
     - name: run extra conformance tests
-      shell: bash # necessary for fail-fast
+      shell: bash
       run: |
         Debug/Luau.Conformance.exe -O2
         Debug/Luau.Conformance.exe -O2 --fflags=true
@@ -92,9 +92,9 @@ jobs:
         Debug/Luau.Conformance.exe --codegen -O2 --fflags=true
         Debug/Luau.Conformance.exe --codegen -O2 --fflags=true,DebugCodegenLimitRegs=true
     - name: cmake cli
-      shell: bash # necessary for fail-fast
+      shell: bash
       run: |
-        cmake --build . --target Luau.Repl.CLI Luau.Analyze.CLI Luau.Compile.CLI --config Debug # match config with tests to improve build time
+        cmake --build . --target Luau.Repl.CLI Luau.Analyze.CLI Luau.Compile.CLI --config Debug
         Debug/luau tests/conformance/assert.luau
         Debug/luau-analyze tests/conformance/assert.luau
         Debug/luau-compile tests/conformance/assert.luau
@@ -148,7 +148,7 @@ jobs:
         files: ./coverage.info
         token: ${{ secrets.CODECOV_TOKEN }}
 
-     web:
+  web:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -193,7 +193,5 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add -f dist/
         git diff --staged --quiet && echo "nada novo" && exit 0
-        git commit -m "build: wasm with memory growth [skip ci]"
-        git push
         git commit -m "build: wasm with memory growth [skip ci]"
         git push
